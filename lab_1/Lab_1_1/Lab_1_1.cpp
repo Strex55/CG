@@ -2,12 +2,14 @@
 
 #include "framework.h"
 #include "Lab_1_1.h"
-
 #include <windows.h>
+#include <mmsystem.h>
+#pragma comment(lib, "winmm.lib")
 
 #define MAX_LOADSTRING 100
-
 #define ANIMATION_TIMER 1
+#define WINDOW_CLASS_NAME  L"Lab_1_1_Window"
+
 
 struct JumpingLetter {
     float baseY;      
@@ -16,22 +18,15 @@ struct JumpingLetter {
     int colorIndex;
 };
 
-COLORREF colors[3] = {
-    RGB(255, 0, 0),   
-    RGB(0, 255, 0),   
-    RGB(0, 0, 255)    
+// ✓ не использовать глобальные переменные!
+struct WindowData {
+    JumpingLetter letterK;
+    JumpingLetter letterN;
+    JumpingLetter letterA;
+    HINSTANCE hInst;
+    WCHAR szTitle[MAX_LOADSTRING];     
+    COLORREF colors[3];
 };
-
-JumpingLetter letterK = { 200, 200, 0, 0 };
-JumpingLetter letterN = { 200, 200, 0, 1 };
-JumpingLetter letterA = { 200, 200, 0, 2 };
-
-
-
-// Global Variables:
-HINSTANCE hInst;                                // current instance
-WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
-WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -40,22 +35,18 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPWSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+    _In_opt_ HINSTANCE hPrevInstance,
+    _In_ LPWSTR    lpCmdLine,
+    _In_ int       nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // TODO: Place code here.
-
-    // Initialize global strings
-    LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_LAB11, szWindowClass, MAX_LOADSTRING);
+    // Register the window class FIRST!
     MyRegisterClass(hInstance);
 
     // Perform application initialization:
-    if (!InitInstance (hInstance, nCmdShow))
+    if (!InitInstance(hInstance, nCmdShow))
     {
         return FALSE;
     }
@@ -74,56 +65,55 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
     }
 
-    return (int) msg.wParam;
+    return (int)msg.wParam;
 }
 
 
-
-//
-//  FUNCTION: MyRegisterClass()
-//
 //  PURPOSE: Registers the window class.
-//
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
     WNDCLASSEXW wcex;
 
     wcex.cbSize = sizeof(WNDCLASSEX);
-
-    wcex.style          = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc    = WndProc;
-    wcex.cbClsExtra     = 0;
-    wcex.cbWndExtra     = 0;
-    wcex.hInstance      = hInstance;
-    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_LAB11));
-    wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_LAB11);
-    wcex.lpszClassName  = szWindowClass;
-    wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    wcex.style = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc = WndProc;
+    wcex.cbClsExtra = 0;
+    wcex.cbWndExtra = 0;
+    wcex.hInstance = hInstance;
+    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_LAB11));
+    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_LAB11);
+    wcex.lpszClassName = WINDOW_CLASS_NAME;
+    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
     return RegisterClassExW(&wcex);
 }
 
-//
-//   FUNCTION: InitInstance(HINSTANCE, int)
-//
 //   PURPOSE: Saves instance handle and creates main window
-//
-//   COMMENTS:
-//
-//        In this function, we save the instance handle in a global variable and
-//        create and display the main program window.
-//
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-   hInst = hInstance; // Store instance handle in our global variable
+    WindowData* pData = new WindowData;
+    pData->hInst = hInstance;
+    pData->letterK = { 200, 200, 0, 0 };
+    pData->letterN = { 200, 200, 0, 1 };
+    pData->letterA = { 200, 200, 0, 2 };
+    pData->colors[0] = RGB(255, 0, 0);
+    pData->colors[1] = RGB(0, 255, 0);
+    pData->colors[2] = RGB(0, 0, 255);
+    LoadStringW(hInstance, IDS_APP_TITLE, pData->szTitle, MAX_LOADSTRING);
 
-   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-       CW_USEDEFAULT, CW_USEDEFAULT, 800, 600, nullptr, nullptr, hInstance, nullptr);
+    HWND hWnd = CreateWindowW(
+        WINDOW_CLASS_NAME,
+        pData->szTitle,        
+        WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT, 800, 600,
+        nullptr, nullptr, hInstance, pData
+    );
 
    if (!hWnd)
    {
+      delete pData;
       return FALSE;
    }
 
@@ -133,18 +123,41 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
-//
-//  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
+void UpdateAnimation(WindowData* pData, float deltaTime) {
+    if (pData == NULL) return;
+
+    const float GRAVITY = 800.0f;        
+    const float JUMP_SPEED = -450.0f;    
+    const float MAX_HEIGHT[] = { 40, 50, 60 }; 
+
+    JumpingLetter* letters[] = {
+        &pData->letterK,
+        &pData->letterN,
+        &pData->letterA
+    };
+
+    for (int i = 0; i < 3; i++) {
+        // Обновляем позицию и скорость с учетом времени
+        letters[i]->currentY += letters[i]->speed * deltaTime;
+        letters[i]->speed += GRAVITY * deltaTime;
+
+        if (letters[i]->currentY > letters[i]->baseY + MAX_HEIGHT[i]) {
+            letters[i]->currentY = letters[i]->baseY;    
+            letters[i]->speed = JUMP_SPEED;              
+            letters[i]->colorIndex = (letters[i]->colorIndex + 1) % 3;
+        }
+    }
+}
+
 //  PURPOSE: Processes messages for the main window.
-//
-//  WM_COMMAND  - process the application menu
-//  WM_PAINT    - Paint the main window
-//  WM_DESTROY  - post a quit message and return
-//
-//
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    WindowData* pData = (WindowData*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+
+    if (pData == NULL && message != WM_DESTROY && message != WM_CREATE) {
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+
     switch (message)
     {
     case WM_COMMAND:
@@ -154,7 +167,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             switch (wmId)
             {
             case IDM_ABOUT:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+                if (pData != NULL) {
+                    DialogBox(pData->hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+                }
                 break;
             case IDM_EXIT:
                 DestroyWindow(hWnd);
@@ -165,137 +180,128 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_PAINT:
-        {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: Add any drawing code that uses hdc here...
+    {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
+        // ✓вернуть контекст устройства в прошщлое состояние (selectBrush сохрнаить в переменную)
+        HPEN hBlackPen = CreatePen(PS_SOLID, 3, RGB(0, 0, 0));
+        HPEN hOldPen = (HPEN)SelectObject(hdc, hBlackPen);
 
-            HPEN hBlackPen = CreatePen(PS_SOLID, 3, RGB(0, 0, 0));
-            SelectObject(hdc, hBlackPen);
-
-            // Буква К
-            HBRUSH hRedBrush = CreateSolidBrush(colors[letterK.colorIndex]);
-            SelectObject(hdc, hRedBrush);
-      
-            Rectangle(hdc, 160, (int)letterK.currentY, 180, (int)letterK.currentY + 150);
-
-            POINT upperK[4] = {
-                {175, (int)letterK.currentY + 50},   
-                {250, (int)letterK.currentY},        
-                {250, (int)letterK.currentY + 20},   
-                {175, (int)letterK.currentY + 70}
-            };
-            Polygon(hdc, upperK, 4);
-
-            POINT lowerK[4] = {
-                {175, (int)letterK.currentY + 70},    
-                {250, (int)letterK.currentY + 130},  
-                {250, (int)letterK.currentY + 150},  
-                {175, (int)letterK.currentY + 90}     
-            };
-            Polygon(hdc, lowerK, 4);
-
-            DeleteObject(hRedBrush);
-
-            // Буква Н 
-            HBRUSH hGreenBrush = CreateSolidBrush(colors[letterN.colorIndex]);
-            SelectObject(hdc, hGreenBrush);
-
-            Rectangle(hdc, 300, (int)letterN.currentY, 320, (int)letterN.currentY + 150);
-      
-            Rectangle(hdc, 380, (int)letterN.currentY, 400, (int)letterN.currentY + 150);
-         
-            Rectangle(hdc, 300, (int)letterN.currentY + 65, 400, (int)letterN.currentY + 85);
-
-            DeleteObject(hGreenBrush);
-
-            // Буква А
-            HBRUSH hBlueBrush = CreateSolidBrush(colors[letterA.colorIndex]);
-            SelectObject(hdc, hBlueBrush);
-
-            POINT leftA[4] = {
-                {470, (int)letterA.currentY + 150},   
-                {490, (int)letterA.currentY + 150},   
-                {530, (int)letterA.currentY + 20},    
-                {510, (int)letterA.currentY}
-            };
-            Polygon(hdc, leftA, 4);
-
-            POINT rightA[4] = {
-                {510, (int)letterA.currentY},          
-                {530, (int)letterA.currentY + 20},    
-                {570, (int)letterA.currentY + 150},   
-                {550, (int)letterA.currentY + 150}
-            };
-            Polygon(hdc, rightA, 4);
-
-            Rectangle(hdc, 500, (int)letterA.currentY + 80, 540, (int)letterA.currentY + 95);
-
-            DeleteObject(hBlueBrush);
-
-            // Очищаем перо
-            SelectObject(hdc, GetStockObject(DC_PEN));
-            DeleteObject(hBlackPen);
-
-
+        if (pData == NULL) {
             EndPaint(hWnd, &ps);
+            break;
         }
-        break;
+        // Буква К 
+        HBRUSH hRedBrush = CreateSolidBrush(pData->colors[pData->letterK.colorIndex]);
+        HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hRedBrush);
+
+        Rectangle(hdc, 160, (int)pData->letterK.currentY, 180, (int)pData->letterK.currentY + 150);
+
+        POINT upperK[4] = {
+            {175, (int)pData->letterK.currentY + 50},
+            {250, (int)pData->letterK.currentY},
+            {250, (int)pData->letterK.currentY + 20},
+            {175, (int)pData->letterK.currentY + 70}
+        };
+        Polygon(hdc, upperK, 4);
+
+        POINT lowerK[4] = {
+            {175, (int)pData->letterK.currentY + 70},
+            {250, (int)pData->letterK.currentY + 130},
+            {250, (int)pData->letterK.currentY + 150},
+            {175, (int)pData->letterK.currentY + 90}
+        };
+        Polygon(hdc, lowerK, 4);
+
+        SelectObject(hdc, hOldBrush);
+        DeleteObject(hRedBrush);
+
+        // Буква Н 
+        HBRUSH hGreenBrush = CreateSolidBrush(pData->colors[pData->letterN.colorIndex]);
+        hOldBrush = (HBRUSH)SelectObject(hdc, hGreenBrush);
+
+        Rectangle(hdc, 300, (int)pData->letterN.currentY, 320, (int)pData->letterN.currentY + 150);
+        Rectangle(hdc, 380, (int)pData->letterN.currentY, 400, (int)pData->letterN.currentY + 150);
+        Rectangle(hdc, 300, (int)pData->letterN.currentY + 65, 400, (int)pData->letterN.currentY + 85);
+
+        SelectObject(hdc, hOldBrush);
+        DeleteObject(hGreenBrush);
+
+        // Буква А
+        HBRUSH hBlueBrush = CreateSolidBrush(pData->colors[pData->letterA.colorIndex]);
+        hOldBrush = (HBRUSH)SelectObject(hdc, hBlueBrush);
+
+        POINT leftA[4] = {
+            {470, (int)pData->letterA.currentY + 150},
+            {490, (int)pData->letterA.currentY + 150},
+            {530, (int)pData->letterA.currentY + 20},
+            {510, (int)pData->letterA.currentY}
+        };
+        Polygon(hdc, leftA, 4);
+
+        POINT rightA[4] = {
+            {510, (int)pData->letterA.currentY},
+            {530, (int)pData->letterA.currentY + 20},
+            {570, (int)pData->letterA.currentY + 150},
+            {550, (int)pData->letterA.currentY + 150}
+        };
+        Polygon(hdc, rightA, 4);
+
+        Rectangle(hdc, 500, (int)pData->letterA.currentY + 80, 540, (int)pData->letterA.currentY + 95);
+
+        SelectObject(hdc, hOldBrush);
+        DeleteObject(hBlueBrush);
+
+        SelectObject(hdc, hOldPen);
+        DeleteObject(hBlackPen);
+
+        EndPaint(hWnd, &ps);
+    }
+    break;
+    
     case WM_DESTROY:
         KillTimer(hWnd, ANIMATION_TIMER);
+        if (pData != NULL) {
+            delete pData;
+        }
         PostQuitMessage(0);
         break;
-    default:
-        return DefWindowProc(hWnd, message, wParam, lParam);
  
     case WM_CREATE:
-        // таймер, который срабатывает каждые 30 миллисекунд
+        {
+        CREATESTRUCT* pCreate = (CREATESTRUCT*)lParam;
+        WindowData* pNewData = (WindowData*)pCreate->lpCreateParams;
+        SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)pNewData);
+        pData = pNewData;
         SetTimer(hWnd, ANIMATION_TIMER, 30, NULL);
         return 0;
+    }
 
     case WM_TIMER:
     {
-        // Для буквы К
-        letterK.currentY += letterK.speed;
-        letterK.speed += 0.5f; 
+        static DWORD lastTime = timeGetTime();
+        DWORD currentTime = timeGetTime();
+        float deltaTime = (currentTime - lastTime) / 1000.0f;
 
-        
-        if (letterK.currentY > letterK.baseY + 40) {
-            letterK.currentY = letterK.baseY;
-            letterK.speed = -10.0f; 
-            letterK.colorIndex = (letterK.colorIndex + 1) % 3;
-        }
+        if (deltaTime > 0.1f) deltaTime = 0.1f;
 
-        // Для буквы Н 
-        letterN.currentY += letterN.speed;
-        letterN.speed += 0.5f; 
+        lastTime = currentTime;
 
-        if (letterN.currentY > letterN.baseY + 50) {
-            letterN.currentY = letterN.baseY;
-            letterN.speed = -10.0f; 
-            letterN.colorIndex = (letterN.colorIndex + 1) % 3;
-        }
+        UpdateAnimation(pData, deltaTime);
 
-        // Для буквы А
-        letterA.currentY += letterA.speed;
-        letterA.speed += 0.5f; 
-
-        if (letterA.currentY > letterA.baseY + 60) {
-            letterA.currentY = letterA.baseY;
-            letterA.speed = -10.0f; 
-            letterA.colorIndex = (letterA.colorIndex + 1) % 3;
-        }
-
-        // перерисовать окно
         InvalidateRect(hWnd, NULL, TRUE);
     }
-    return 0;
+    break;
+
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
     }
+
     return 0;
 }
     
 // Message handler for about box.
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+    INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
     switch (message)
