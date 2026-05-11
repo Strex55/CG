@@ -4,6 +4,25 @@ Debug/
 Release/
 x64/
 x86/
+Win32/
+
+# CMake build folders
+build/
+out/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.ninja
+*.log
+
+# Visual Studio generated files
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
 
 # Временные файлы
 *.user
@@ -11,3 +30,10 @@ x86/
 *.cache
 *.obj
 *.pdb
+*.ilk
+*.exp
+
+# Скомпилированные файлы
+*.exe
+*.dll
+*.lib

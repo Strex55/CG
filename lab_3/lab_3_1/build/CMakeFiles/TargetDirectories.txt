@@ -1,0 +1,3 @@
+D:/Nikita/3_COURSE/CG/lab_3/lab_3_1/build/CMakeFiles/lab_3_1.dir
+D:/Nikita/3_COURSE/CG/lab_3/lab_3_1/build/CMakeFiles/ALL_BUILD.dir
+D:/Nikita/3_COURSE/CG/lab_3/lab_3_1/build/CMakeFiles/ZERO_CHECK.dir
